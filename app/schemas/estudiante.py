@@ -28,4 +28,4 @@ class EstudianteUpdate(BaseModel):
 
 class EstudianteResponse(EstudianteBase):
     class Config:
-        from_attributes = True
+        orm_mode = True

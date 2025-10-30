@@ -78,6 +78,25 @@ Si encuentras errores relacionados con `'FieldInfo' object has no attribute 'in_
 pip install fastapi==0.95.2 "pydantic>=1.8.0,<2.0"
 ```
 
+### Problema de Serialización SQLAlchemy-Pydantic (Linux/Fedora)
+Si encuentras errores como `ValidationError: value is not a valid dict` después de configurar las versiones correctas:
+
+1. **Verifica que uses `orm_mode = True`** en lugar de `from_attributes = True` en todos los esquemas de respuesta:
+
+```python
+# En app/schemas/*.py
+class EstudianteResponse(EstudianteBase):
+    class Config:
+        orm_mode = True  # Para Pydantic 1.x
+```
+
+2. **Si el problema persiste, reinstala las dependencias**:
+
+```bash
+pip uninstall fastapi pydantic sqlalchemy -y
+pip install fastapi==0.95.2 "pydantic>=1.8.0,<2.0" "sqlalchemy>=1.4,<2.0"
+```
+
 ### Verificar Instalación de psycopg2
 Si psycopg2 no se instala correctamente:
 
@@ -190,6 +209,25 @@ pip freeze > requirements.txt
 pytest
 ```
 
+### Aplicar cambios en servidor existente (Linux/Fedora)
+Si tienes un servidor corriendo y necesitas aplicar los cambios de compatibilidad:
+
+```bash
+# 1. Detener el servidor (Ctrl+C)
+# 2. Actualizar el código desde Git
+git pull origin master
+
+# 3. Activar entorno virtual
+source .venv/bin/activate
+
+# 4. Reinstalar dependencias con versiones correctas
+pip uninstall fastapi pydantic sqlalchemy -y
+pip install fastapi==0.95.2 "pydantic>=1.8.0,<2.0" "sqlalchemy>=1.4,<2.0"
+
+# 5. Reiniciar el servidor
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
 ## 📝 Estructura del Proyecto
 
 ```
@@ -231,13 +269,15 @@ microservicio_estudiantil/
 
 1. **Compatibilidad de Versiones**: Este proyecto requiere versiones específicas de las dependencias para funcionar correctamente con Python 3.13.
 
-2. **Variables de Entorno**: Nunca commitees el archivo `.env` con credenciales reales al repositorio.
+2. **Diferencias entre Windows y Linux**: Algunos errores pueden aparecer específicamente en servidores Linux/Fedora debido a diferencias en las versiones de las librerías del sistema. Los esquemas Pydantic han sido configurados para funcionar con Pydantic 1.x (`orm_mode = True`).
 
-3. **Base de Datos**: El proyecto está configurado para conectarse a una instancia de PostgreSQL en Aiven. Las tablas se crean automáticamente al iniciar la aplicación.
+3. **Variables de Entorno**: Nunca commitees el archivo `.env` con credenciales reales al repositorio.
 
-4. **Logging**: La aplicación genera logs detallados que se pueden encontrar en la carpeta `logs/`.
+4. **Base de Datos**: El proyecto está configurado para conectarse a una instancia de PostgreSQL en Aiven. Las tablas se crean automáticamente al iniciar la aplicación.
 
-5. **CORS**: Está configurado para aceptar peticiones desde cualquier origen (`*`). En producción, configura dominios específicos.
+5. **Logging**: La aplicación genera logs detallados que se pueden encontrar en la carpeta `logs/`.
+
+6. **CORS**: Está configurado para aceptar peticiones desde cualquier origen (`*`). En producción, configura dominios específicos.
 
 ## 🆘 Troubleshooting
 
@@ -261,6 +301,28 @@ pip install fastapi==0.95.2 "pydantic>=1.8.0,<2.0"
 - Verifica que tengas acceso a internet
 - Verifica las credenciales en el archivo `.env`
 - Ejecuta `python test_connection.py` para probar la conexión
+
+### Error: "ValidationError: value is not a valid dict" en Linux/Fedora
+Si encuentras errores de validación de Pydantic como `value is not a valid dict (type=type_error.dict)`:
+
+```bash
+# Actualizar esquemas Pydantic para usar from_orm
+# Este error ocurre por incompatibilidades entre SQLAlchemy 1.4 y Pydantic 1.x
+```
+
+**Solución**: Asegúrate de que todos los esquemas Pydantic tengan configurado `from_attributes = True` (Pydantic 2.x) o `orm_mode = True` (Pydantic 1.x) en la clase `Config`.
+
+Ejemplo en `app/schemas/estudiante.py`:
+```python
+class EstudianteResponse(BaseModel):
+    # ... campos del modelo ...
+    
+    class Config:
+        orm_mode = True  # Para Pydantic 1.x
+        # from_attributes = True  # Para Pydantic 2.x
+```
+
+Si el problema persiste, verifica que todas las funciones CRUD retornen el objeto SQLAlchemy correctamente.
 
 ## 📞 Soporte
 
